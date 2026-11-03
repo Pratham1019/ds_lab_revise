@@ -5,11 +5,12 @@
 #define MAX 1000
 
 typedef struct Node {
-    int data;
+    int data;                 // Value held by this tree node.
     struct Node *left, *right;
 } Node;
 
-// Create binary tree using preorder input (-1 = NULL)
+// Build the tree in preorder: enter a node, then its left and right subtrees.
+// Enter -1 where a child is missing.
 Node* create() {
     int value;
     printf("Enter node value (-1 for NULL): ");
@@ -24,6 +25,7 @@ Node* create() {
     }
 
     root->data = value;
+    root->left = root->right = NULL;
 
     printf("Enter left child of %d:\n", value);
     root->left = create();
@@ -34,7 +36,8 @@ Node* create() {
     return root;
 }
 
-// Left -> Root -> Right
+// Inorder traversal: Left -> Root -> Right.
+// An explicit stack remembers nodes while we walk down each left branch.
 void inorder(Node* root) {
     Node* stack[MAX];
     int top = -1;
@@ -52,7 +55,8 @@ void inorder(Node* root) {
     }
 }
 
-// Root -> Left -> Right
+// Preorder traversal: Root -> Left -> Right.
+// Push right before left so the left subtree is processed first (LIFO stack).
 void preorder(Node* root) {
     if (root == NULL) return;
 
@@ -69,7 +73,8 @@ void preorder(Node* root) {
     }
 }
 
-// Left -> Right -> Root (two stacks)
+// Postorder traversal: Left -> Right -> Root.
+// The second stack reverses the visit order produced by the first stack.
 void postorder(Node* root) {
     if (root == NULL) return;
 
@@ -88,20 +93,22 @@ void postorder(Node* root) {
     while (top2 != -1) printf("%d ", s2[top2--]->data);
 }
 
-// Breadth-first traversal
+// Print nodes at the requested 1-based level using breadth-first traversal.
 void levelorder(Node* root, int level) {
     if (root == NULL) return;
 
     Node* queue[MAX];
     int front = 0, rear = 0;
+    int currentLevel = 1; // The root is at level 1.
     queue[rear++] = root;
 
     while (front < rear) {
-        int count = front - rear;
+        // Snapshot the number of nodes already queued at this level.
+        int count = rear - front;
 
         for (int i = 0; i < count; i++) {
             Node* curr = queue[front++];
-            if (count == level) {
+            if (currentLevel == level) {
                 printf("%d ", curr->data);
             }
 
@@ -109,10 +116,12 @@ void levelorder(Node* root, int level) {
 
             if (curr->right) queue[rear++] = curr->right;
         }
+
+        currentLevel++;
     }
 }
 
-// Height in number of nodes
+// Height measured in nodes: an empty tree has height 0, a leaf has height 1.
 int height(Node* root) {
     if (root == NULL) return 0;
 
@@ -122,7 +131,7 @@ int height(Node* root) {
     return 1 + (left > right ? left : right);
 }
 
-// Count nodes with no children
+// A leaf is a node with neither a left nor a right child.
 int countLeaves(Node* root) {
     if (root == NULL) return 0;
 
@@ -131,7 +140,7 @@ int countLeaves(Node* root) {
     return countLeaves(root->left) + countLeaves(root->right);
 }
 
-// Count nodes with exactly one child
+// Count nodes that have exactly one child, plus such nodes in both subtrees.
 int countOneDegree(Node* root) {
     if (root == NULL) return 0;
 
@@ -140,7 +149,8 @@ int countOneDegree(Node* root) {
     return count + countOneDegree(root->left) + countOneDegree(root->right);
 }
 
-// Validate BST using strict min/max bounds
+// Check the BST rule across the whole subtree using exclusive value bounds.
+// Strict bounds mean duplicate values are not allowed.
 int bstValid(Node* root, long long min, long long max) {
     if (root == NULL) return 1;
 
@@ -150,7 +160,8 @@ int bstValid(Node* root, long long min, long long max) {
            bstValid(root->right, root->data, max);
 }
 
-// Find parent of target
+// Search for a node whose direct left or right child contains target.
+// The root itself has no parent, so this returns NULL when target is the root.
 Node* findParent(Node* root, int target) {
     if (root == NULL) return NULL;
 
@@ -165,7 +176,7 @@ Node* findParent(Node* root, int target) {
     return findParent(root->right, target);
 }
 
-// Print ancestors from parent to root
+// Return whether key exists; while recursion unwinds, print parent through root.
 int printAncestors(Node* root, int key) {
     if (root == NULL) return 0;
     if (root->data == key) return 1;
@@ -178,8 +189,7 @@ int printAncestors(Node* root, int key) {
     return 0;
 }
 
-// Print the longest path in a tree
-
+// Print one longest root-to-leaf path by repeatedly choosing the taller subtree.
 void printLongest(Node* root) {
     if (!root) {
         return;
@@ -194,7 +204,7 @@ void printLongest(Node* root) {
     }
 }
 
-// Release allocated memory
+// Free children before their parent so no subtree pointers are used after free.
 void freeTree(Node* root) {
     if (root == NULL) return;
 
@@ -204,6 +214,7 @@ void freeTree(Node* root) {
 }
 
 int main() {
+    // Input uses preorder order, with -1 placeholders for missing children.
     Node* root = create();
     int key;
 
@@ -217,7 +228,7 @@ int main() {
     postorder(root);
 
     printf("\nLevel order: ");
-    levelorder(root, 3);
+    levelorder(root, 3); // Print the nodes on level 3 (root is level 1).
 
     printf("\nHeight: %d\n", height(root));
     printf("Leaf nodes: %d\n", countLeaves(root));

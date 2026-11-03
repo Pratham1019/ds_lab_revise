@@ -2,24 +2,27 @@
 #include <stdlib.h>
 
 typedef struct Node {
-    int data;
-    int priority;
-    struct Node *next;
+    int data;             // The value stored in the queue.
+    int priority;         // Smaller numbers are served before larger numbers.
+    struct Node *next;    // Link to the next item in priority order.
 } Node;
 
 typedef struct {
-    Node *front, *rear;
+    Node *front, *rear;   // front is removed first; rear helps track the last node.
 } PriorityQueue;
 
+// Start with an empty queue. A NULL pointer is ignored safely.
 void initQueue(PriorityQueue *pq) {
     if (pq == NULL) return;
     pq->front = pq->rear = NULL;
 }
 
+// A queue is empty if it is missing or has no first node.
 int isEmpty(const PriorityQueue *pq) {
     return pq == NULL || pq->front == NULL;
 }
 
+// Allocate and initialize one node; return NULL if memory allocation fails.
 Node *createNode(int value, int priority) {
     Node *newNode = malloc(sizeof *newNode);
     if (newNode == NULL) return NULL;
@@ -30,7 +33,8 @@ Node *createNode(int value, int priority) {
     return newNode;
 }
 
-// Smaller priority numbers are served first.
+// Insert the new node in ascending priority order (smallest number first).
+// Nodes with equal priority stay in insertion order because we pass existing ties.
 // Returns 1 on success, 0 if the queue is invalid or allocation fails.
 int enqueue(PriorityQueue *pq, int value, int priority) {
     if (pq == NULL) {
@@ -39,17 +43,23 @@ int enqueue(PriorityQueue *pq, int value, int priority) {
 
     Node *newNode = createNode(value, priority);
 
+    if (newNode == NULL) {
+        return 0;
+    }
+
     if (isEmpty(pq)) {
         pq->front = pq->rear = newNode;
         return 1;
     }
 
+    // If this priority comes before the current front, prepend the node.
     if (priority < pq->front->priority) {
         newNode->next = pq->front;
         pq->front = newNode;
         return 1;
     }
 
+    // Otherwise find the last node whose priority is <= the new priority.
     Node *current = pq->front;
     while (current->next != NULL && current->next->priority <= priority) {
         current = current->next;
@@ -65,7 +75,7 @@ int enqueue(PriorityQueue *pq, int value, int priority) {
     return 1;
 }
 
-// Removes and returns the highest-priority item, or -1 if empty.
+// Removes and returns the highest-priority item (the front node), or -1 if empty.
 // This simple version assumes -1 is not a valid value in the queue.
 int dequeue(PriorityQueue *pq) {
     if (isEmpty(pq)) {
@@ -75,6 +85,7 @@ int dequeue(PriorityQueue *pq) {
     Node *temp = pq->front;
     int value = temp->data;
 
+    // Advance the front; if it became NULL, the queue is now fully empty.
     pq->front = temp->next;
     if (pq->front == NULL) {
         pq->rear = NULL;
@@ -90,6 +101,7 @@ void displayQueue(const PriorityQueue *pq) {
         return;
     }
 
+    // Walk through the linked list from highest to lowest priority.
     for (const Node *current = pq->front; current != NULL; current = current->next) {
         printf("(value=%d, priority=%d) -> ", current->data, current->priority);
     }
@@ -99,6 +111,7 @@ void displayQueue(const PriorityQueue *pq) {
 void freeQueue(PriorityQueue *pq) {
     if (pq == NULL) return;
 
+    // Release every node so the queue does not leave allocated memory behind.
     while (pq->front != NULL) {
         Node *oldFront = pq->front;
         pq->front = oldFront->next;
